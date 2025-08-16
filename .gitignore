@@ -1,0 +1,9 @@
+# Temporary files
+.temp/
+*.tmp
+*.log
+
+# IDE files
+*.swp
+*.swo
+*~
