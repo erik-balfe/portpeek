@@ -115,7 +115,12 @@ output_process() {
   fi
   
   if [ "$kill_pid" -eq 1 ]; then
-    read -p "Kill PID $pid? (y/n): " confirm
+    if [[ -t 0 ]]; then
+      read -p "Kill PID $pid? (y/n): " confirm
+    else
+      echo "Non-interactive mode: killing PID $pid"
+      confirm="y"
+    fi
     if [ "$confirm" = "y" ]; then
       $use_sudo kill -9 "$pid" && echo "Killed $pid" || echo "Failed to kill $pid"
     fi
