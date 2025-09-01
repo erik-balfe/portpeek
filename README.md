@@ -13,7 +13,7 @@ Quickly debug busy ports during dev or sysadmin work. Better than raw `lsof` or 
 ## Installation
 One-liner for global use (downloads from this repo):
 ```
-curl -o /usr/local/bin/portpeek https://raw.githubusercontent.com/erik-balfe/portpeek/main/portpeek.sh && chmod +x /usr/local/bin/portpeek
+curl -o /usr/local/bin/portpeek https://raw.githubusercontent.com/erik-balfe/portpeek/master/portpeek.sh && chmod +x /usr/local/bin/portpeek
 ```
 
 Or clone repo and symlink: `ln -s $(pwd)/portpeek.sh /usr/local/bin/portpeek`.
