@@ -83,9 +83,16 @@ get_exe_path() {
     fi
   fi
 
-  # Method 2: Try lsof (cross-platform but may fail)
-  exe=$($use_sudo lsof -p "$pid" 2>/dev/null | awk '$4 == "txt" && $NF ~ /^\// {print $NF; exit}')
-  if [[ -n "$exe" && -e "$exe" ]]; then
+  # Method 2: Try lsof txt, filter for actual executables
+  # On macOS, lsof can return locale files, so we need to check executability
+  while IFS= read -r candidate; do
+    if [[ -n "$candidate" && -x "$candidate" ]]; then
+      exe="$candidate"
+      break
+    fi
+  done < <($use_sudo lsof -p "$pid" 2>/dev/null | awk '$4 == "txt" && $NF ~ /^\// {print $NF}')
+
+  if [[ -n "$exe" ]]; then
     echo "$exe"
     return 0
   fi
@@ -108,7 +115,13 @@ get_full_command() {
   local cmdline=""
 
   # Method 1: Try ps args (cross-platform, most reliable)
-  cmdline=$(ps -p "$pid" -o args= 2>/dev/null)
+  # Use -ww on macOS/BSD to get unlimited width
+  if [[ "$OS" == "macos" ]]; then
+    cmdline=$(ps -p "$pid" -ww -o args= 2>/dev/null)
+  else
+    cmdline=$(ps -p "$pid" -o args= 2>/dev/null)
+  fi
+
   if [[ -n "$cmdline" ]]; then
     echo "$cmdline"
     return 0
@@ -258,23 +271,33 @@ output_process() {
   fi
 
   if [ "$kill_pid" -eq 1 ]; then
-    if [[ -t 0 ]]; then
-      read -p "Kill PID $pid? (y/n): " confirm
+    # Try to read from /dev/tty for interactive prompt, fallback to non-interactive
+    if [[ -t 1 ]] && [[ -e /dev/tty ]]; then
+      read -p "Kill PID $pid? (y/n): " confirm < /dev/tty
     else
-      echo "Non-interactive mode: killing PID $pid"
+      # Assume yes in non-interactive mode
       confirm="y"
     fi
-    if [ "$confirm" = "y" ]; then
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
       $use_sudo kill -9 "$pid" && echo "Killed $pid" || echo "Failed to kill $pid"
     fi
   fi
 }
 
 if [ -n "$output" ]; then
-  echo "$output" | while IFS= read -r line; do
+  # Extract unique PIDs to avoid duplicates (lsof can return multiple lines per PID)
+  seen_pids=""
+
+  while IFS= read -r line; do
     if [ -n "$line" ]; then
       pid=$(echo "$line" | awk '{print $2}')
       process_name=$(echo "$line" | awk '{print $1}')
+
+      # Skip if we've already processed this PID
+      if [[ " $seen_pids " == *" $pid "* ]]; then
+        continue
+      fi
+      seen_pids="$seen_pids $pid"
 
       # Use helper functions instead of direct /proc access
       app_path=$(get_exe_path "$pid" "$use_sudo")
@@ -284,7 +307,7 @@ if [ -n "$output" ]; then
 
       output_process "$pid" "$process_name" "$app_path" "$app_name" "$full_cmd" "$work_dir"
     fi
-  done
+  done <<< "$output"
 else
   # Fallback to ss (Linux only)
   if [[ "$OS" == "linux" ]]; then
