@@ -1,9 +1,20 @@
+# Implementation Plan: Cross-Platform portpeek
+
+## Design Philosophy
+**Universal First, OS-Specific Fallback**
+
+Try methods that work on both platforms, only fall back to OS-specific commands when universal methods fail.
+
+## Changes to portpeek.sh
+
+### 1. Add OS Detection (Top of script, after shebang)
+
+```bash
 #!/bin/bash
 
 # portpeek: Find process using a port with details (PID, name, path, cmd, cwd)
 # Cross-platform: Linux and macOS
 # Usage: portpeek [options] <port>
-# Options: -h/--help, -p/--protocol <tcp|udp|all>, --json, --quiet, -k/--kill
 
 # Detect operating system
 detect_os() {
@@ -15,8 +26,14 @@ detect_os() {
 }
 
 OS="$(detect_os)"
+```
 
-# Function to check dependencies
+### 2. Replace check_deps() Function
+
+**Current**: Linux-centric with apt/dnf/pacman
+**New**: OS-aware with appropriate package managers
+
+```bash
 check_deps() {
   local missing=""
 
@@ -33,7 +50,7 @@ check_deps() {
       core_deps="$core_deps sed"
       ;;
     *)
-      echo "Warning: Unknown OS ($OS). Attempting to run anyway..." >&2
+      echo "Warning: Unknown OS. Attempting to run anyway..."
       return 0
       ;;
   esac
@@ -66,7 +83,13 @@ check_deps() {
     echo "Warning: ss not found; fallback may be limited. Install iproute2." >&2
   fi
 }
+```
 
+### 3. Add Universal Helper Functions
+
+**Before the main logic, after check_deps**
+
+```bash
 # Universal function to get executable path
 # Tries multiple methods in order of reliability
 get_exe_path() {
@@ -159,84 +182,24 @@ get_working_dir() {
 
   echo "Unknown"
 }
+```
 
-# Parse options
-protocol="all"
-json_output=0
-quiet=0
-kill_pid=0
-while getopts ":hp:k-:" opt; do
-  case $opt in
-    h) echo "Usage: $0 [options] <port>"
-       echo "Options:"
-       echo "  -h, --help      Show this help"
-       echo "  -p, --protocol  tcp|udp|all (default: all)"
-       echo "  --json          JSON output"
-       echo "  --quiet         Minimal output (PID and name only)"
-       echo "  -k, --kill      Kill the PID (with confirmation)"
-       exit 0 ;;
-    p) protocol="$OPTARG"
-       if [[ ! "$protocol" =~ ^(tcp|udp|all)$ ]]; then
-         echo "Invalid protocol: $protocol" >&2
-         exit 1
-       fi ;;
-    k) kill_pid=1 ;;
-    -)
-      case "$OPTARG" in
-        help) exec "$0" -h ;;
-        protocol=*) protocol="${OPTARG#*=}" ;;
-        json) json_output=1 ;;
-        quiet) quiet=1 ;;
-        kill) kill_pid=1 ;;
-        *) echo "Invalid option: --$OPTARG" >&2; exit 1 ;;
-      esac ;;
-    \?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
-  esac
-done
-shift $((OPTIND-1))
+### 4. Update output_process() Function
 
-port="$1"
+**Replace the hardcoded /proc calls with helper functions**
 
-# Validate port
-if [ -z "$port" ]; then
-  echo "Usage: $0 <port_number>"
-  exit 1
-fi
-if ! [[ "$port" =~ ^[0-9]+$ && "$port" -ge 1 && "$port" -le 65535 ]]; then
-  echo "Invalid port: Must be number 1-65535"
-  exit 1
-fi
-
-check_deps
-
-# Build lsof command based on protocol
-lsof_proto=""
-case "$protocol" in
-  tcp) lsof_proto="-iTCP:$port" ;;
-  udp) lsof_proto="-iUDP:$port" ;;
-  all) lsof_proto="-i :$port" ;;
-esac
-
-# Try without sudo first
-use_sudo=""
-output=$(lsof $lsof_proto 2>/dev/null | tail -n +2)
-if [ -z "$output" ]; then
-  use_sudo="sudo "
-  output=$($use_sudo lsof $lsof_proto 2>/dev/null | tail -n +2)
-fi
-
-# Function to output in desired format
+```bash
 output_process() {
   local pid="$1" process_name="$2" app_path="$3" app_name="$4" full_cmd="$5" work_dir="$6"
 
-  # Check if process still exists
-  if [[ "$OS" == "linux" ]]; then
-    if [ ! -d "/proc/$pid" ]; then
-      echo "Process $pid vanished." >&2
-      return
-    fi
-  else
-    # On macOS, we can't check /proc, so use ps
+  if [ ! -d "/proc/$pid" ] && [[ "$OS" == "linux" ]]; then
+    echo "Process $pid vanished." >&2
+    return
+  fi
+
+  # On macOS, we can't check /proc, so just try to get info
+  if [[ "$OS" == "macos" ]]; then
+    # Check if process still exists using ps
     if ! ps -p "$pid" >/dev/null 2>&1; then
       echo "Process $pid vanished." >&2
       return
@@ -269,7 +232,13 @@ output_process() {
     fi
   fi
 }
+```
 
+### 5. Update Main Logic to Use Helper Functions
+
+**Replace the direct /proc reads with helper function calls**
+
+```bash
 if [ -n "$output" ]; then
   echo "$output" | while IFS= read -r line; do
     if [ -n "$line" ]; then
@@ -316,3 +285,45 @@ else
     exit 0
   fi
 fi
+```
+
+## Benefits of This Design
+
+1. **Universal First**: Uses `ps` and `lsof` which work on both platforms
+2. **Smart Fallbacks**: Falls back to `/proc` on Linux when universal methods fail
+3. **No Code Duplication**: Helper functions encapsulate OS differences
+4. **Maintainable**: Clear separation of concerns
+5. **Testable**: Each helper can be tested independently
+6. **Graceful Degradation**: Returns "Unknown" instead of failing
+
+## Testing Checklist
+
+### Linux Testing:
+- [ ] Basic port lookup (lsof method)
+- [ ] /proc fallback working
+- [ ] ss fallback when lsof empty
+- [ ] All flags: --help, --json, --quiet, -k, -p
+- [ ] sudo handling
+- [ ] Invalid port handling
+- [ ] No process on port
+
+### macOS Testing (User will test):
+- [ ] Basic port lookup (lsof method)
+- [ ] lsof parsing for exe/cwd/cmd
+- [ ] ps for command line
+- [ ] All flags work
+- [ ] No /proc paths attempted
+- [ ] Dependency check for macOS
+
+## File Changes Summary
+
+1. **portpeek.sh**: Complete rewrite with OS detection and helper functions
+2. **README.md**: Update to mention macOS support
+3. **MACOS_DESIGN.md**: Research document (created)
+4. **IMPLEMENTATION_PLAN.md**: This file (created)
+
+## Branch Strategy
+
+Feature branch: `feature/macos-support`
+- Based on: current master
+- Ready for: macOS testing by user
