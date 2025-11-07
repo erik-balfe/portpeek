@@ -1,14 +1,22 @@
 # portpeek
 
-A simple Bash script to find the process using a Linux port, showing PID, name, path, full command, and working directory.
+A simple cross-platform Bash script to find the process using a port, showing PID, name, path, full command, and working directory.
+
+Works on both **Linux** and **macOS**.
 
 ## Why?
 Quickly debug busy ports during dev or sysadmin work. Better than raw `lsof` or `ss` for details like launch command/location.
 
 ## Requirements
-- Linux with /proc filesystem.
-- Tools: lsof, awk, sed, basename, readlink, cat, tr (script checks and suggests installs).
-- ss (optional fallback, from iproute2).
+
+### Linux
+- /proc filesystem (standard on all modern Linux)
+- Tools: lsof, awk, sed, basename, readlink, cat, tr (script checks and suggests installs)
+- ss (optional fallback, from iproute2)
+
+### macOS
+- lsof, awk, sed, basename (all built-in)
+- No additional dependencies required
 
 ## Installation
 One-liner for global use (downloads from this repo):
