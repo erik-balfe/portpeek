@@ -19,12 +19,46 @@ Quickly debug busy ports during dev or sysadmin work. Better than raw `lsof` or 
 - No additional dependencies required
 
 ## Installation
-One-liner for global use (downloads from this repo):
+
+### Homebrew (macOS/Linux) - Recommended
+
+```bash
+# Coming soon - awaiting v1.0.0 release
+brew tap erik-balfe/portpeek
+brew install portpeek
 ```
+
+### Quick Install Script
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/erik-balfe/portpeek/master/install.sh | bash
+```
+
+### Manual Installation
+
+**Option 1: Direct download**
+```bash
 curl -o /usr/local/bin/portpeek https://raw.githubusercontent.com/erik-balfe/portpeek/master/portpeek.sh && chmod +x /usr/local/bin/portpeek
 ```
 
-Or clone repo and symlink: `ln -s $(pwd)/portpeek.sh /usr/local/bin/portpeek`.
+**Option 2: Clone and symlink**
+```bash
+git clone https://github.com/erik-balfe/portpeek.git
+cd portpeek
+ln -s $(pwd)/portpeek.sh /usr/local/bin/portpeek
+```
+
+### Package Managers
+
+**Homebrew (after tap setup):**
+```bash
+brew install portpeek
+```
+
+**Arch Linux (AUR - coming soon):**
+```bash
+yay -S portpeek
+```
 
 ## Usage
 ```
