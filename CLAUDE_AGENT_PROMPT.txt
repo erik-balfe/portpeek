@@ -1,0 +1,243 @@
+# Prompt for Claude Code Agent: Submit portpeek to Homebrew Core
+
+## Context
+
+I have a CLI tool called **portpeek** - a cross-platform bash script that finds processes using a port with full details (PID, name, path, command, working directory). It works on both macOS and Linux.
+
+**Current State:**
+- ✅ GitHub repo: https://github.com/erik-balfe/portpeek
+- ✅ v1.0.0 release created with tag
+- ✅ Homebrew formula ready at `portpeek.rb` in repo
+- ✅ SHA256 hash already filled in formula
+- ✅ MIT licensed, tested, production-ready
+
+**Your Task:**
+Submit the portpeek formula to Homebrew Core so users can install with `brew install portpeek`.
+
+## Prerequisites Check
+
+Before starting, verify:
+1. I'm on macOS with Homebrew installed: `brew --version`
+2. I have a GitHub account and can fork repos
+3. We're in the portpeek repo directory: `pwd` should show `.../portpeek`
+4. The formula exists: `ls -la portpeek.rb`
+
+## Instructions
+
+### Step 1: Fork Homebrew Core
+
+I need to do this manually on GitHub:
+1. Go to: https://github.com/Homebrew/homebrew-core
+2. Click "Fork" (top right)
+3. Fork to my GitHub account
+4. Tell me when done so you can continue
+
+### Step 2: Set Up Local Homebrew Core
+
+After I confirm the fork is created, run these commands:
+
+```bash
+# Navigate to homebrew-core repository
+cd "$(brew --repository homebrew/core)"
+
+# Show current remotes
+git remote -v
+
+# Add my fork as remote (replace MY_GITHUB_USERNAME with my actual username)
+# Ask me for my GitHub username if needed
+git remote add MY_GITHUB_USERNAME https://github.com/MY_GITHUB_USERNAME/homebrew-core.git
+
+# Update from upstream
+git fetch origin
+git checkout master
+git reset --hard origin/master
+
+# Confirm we're on clean master
+git status
+```
+
+### Step 3: Create Formula Branch
+
+```bash
+cd "$(brew --repository homebrew/core)"
+
+# Create new branch for portpeek
+git checkout -b portpeek
+
+# Verify we're on the new branch
+git branch --show-current
+
+# Copy the formula from my portpeek repo
+# First, ask me for the path to my portpeek repo, or detect it
+# Then copy the formula
+cp /path/to/my/portpeek/portpeek.rb Formula/portpeek.rb
+
+# Show what we copied
+cat Formula/portpeek.rb
+
+# Verify SHA256 is filled (not empty)
+grep sha256 Formula/portpeek.rb
+```
+
+### Step 4: Test the Formula Locally
+
+**IMPORTANT**: Run ALL these tests. If any fail, stop and tell me.
+
+```bash
+cd "$(brew --repository homebrew/core)"
+
+# 1. Install from source
+brew install --build-from-source Formula/portpeek.rb
+
+# 2. Verify installation
+which portpeek
+portpeek --help
+
+# 3. Test basic functionality
+portpeek 3000  # Should either find a process or say "No process found"
+portpeek --json 8080
+portpeek 99999  # Should show "Invalid port" error
+
+# 4. Run brew test
+brew test portpeek
+
+# 5. Run audit (MUST PASS - this is critical)
+brew audit --new-formula --strict portpeek
+
+# 6. Style check
+brew style Formula/portpeek.rb
+
+# If all tests pass, uninstall for now
+brew uninstall portpeek
+```
+
+**If any test fails:**
+- Show me the error
+- Don't proceed until we fix it
+- We may need to update the formula
+
+### Step 5: Commit and Push
+
+**Only proceed if ALL tests passed in Step 4**
+
+```bash
+cd "$(brew --repository homebrew/core)"
+
+# Verify we're on portpeek branch
+git branch --show-current
+
+# Show what we're committing
+git status
+git diff Formula/portpeek.rb
+
+# Commit with proper message format
+git add Formula/portpeek.rb
+git commit -m "portpeek 1.0.0 (new formula)
+
+portpeek: Find process using a port with full details"
+
+# Push to MY fork (replace MY_GITHUB_USERNAME)
+git push MY_GITHUB_USERNAME portpeek
+```
+
+### Step 6: Create Pull Request
+
+After push succeeds, tell me:
+
+1. Go to my fork: https://github.com/MY_GITHUB_USERNAME/homebrew-core
+2. GitHub should show a "Compare & pull request" button
+3. Click it to create PR with these details:
+
+**PR Title:**
+```
+portpeek 1.0.0 (new formula)
+```
+
+**PR Description:**
+```
+**Describe your change:**
+Add portpeek formula - a cross-platform CLI tool to find processes using a port with full details (PID, name, path, command, working directory).
+
+**If your change only affects the Formula/ directory:**
+- [x] Tested on macOS
+- [x] Built from source
+- [x] Passes `brew test`
+- [x] Passes `brew audit --new-formula --strict`
+
+**Release Notes:**
+https://github.com/erik-balfe/portpeek/releases/tag/v1.0.0
+
+**Additional context:**
+- Cross-platform: works on macOS and Linux
+- Zero runtime dependencies (lsof is built-in)
+- MIT licensed
+- Comprehensive test suite included in repo
+```
+
+Then guide me through creating the PR on GitHub.
+
+## Error Handling
+
+### If "formula already exists" error:
+Check if someone else already submitted portpeek:
+```bash
+brew search portpeek
+```
+Tell me if it exists.
+
+### If audit fails:
+- Show me the full error output
+- Common issues:
+  * License mismatch - verify LICENSE file in repo
+  * Test failures - we need to fix test block
+  * Style violations - run `brew style Formula/portpeek.rb` and fix
+
+### If build fails:
+Run with verbose output:
+```bash
+brew install --build-from-source --verbose --debug Formula/portpeek.rb
+```
+Show me the error.
+
+### If tests fail:
+Show me which test failed and the output:
+```bash
+brew test --verbose portpeek
+```
+
+## Success Criteria
+
+You've succeeded when:
+1. ✅ All tests pass (install, test, audit, style)
+2. ✅ Formula is committed to portpeek branch
+3. ✅ Branch is pushed to my fork
+4. ✅ PR is created on Homebrew/homebrew-core
+5. ✅ BrewTestBot starts running (you'll see it comment on PR)
+
+## After Submission
+
+Tell me:
+- PR URL
+- What to expect next (review timeline: 1-2 weeks)
+- How to respond if maintainers request changes
+
+## Alternative: Quick Install (Temporary)
+
+If for any reason the Homebrew Core submission isn't feasible right now, we can document the direct install method that works immediately:
+
+```bash
+brew install https://raw.githubusercontent.com/erik-balfe/portpeek/master/portpeek.rb
+```
+
+This bypasses the review process and works right away.
+
+## Important Notes
+
+- Don't skip the testing steps - Homebrew maintainers will reject if tests fail
+- The formula is already correct, just needs submission
+- Ask me questions if you're unsure about anything
+- Stop if you encounter errors and ask for help
+
+## Ready?
+
+Start by checking prerequisites, then proceed through each step. Ask me to fork Homebrew Core before Step 2.
