@@ -2,7 +2,7 @@ class Portpeek < Formula
   desc "Find process using a port with full details (PID, name, path, command, cwd)"
   homepage "https://github.com/erik-balfe/portpeek"
   url "https://github.com/erik-balfe/portpeek/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "" # Will be generated when creating the release
+  sha256 "e2c40e4ea70bc01c4983c2d5cc830c4adff65963248b6b22cdea1fd44ba4ae6e"
   license "MIT"
 
   depends_on "lsof"
