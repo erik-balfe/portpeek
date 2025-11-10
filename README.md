@@ -29,7 +29,11 @@ A lightweight, cross-platform CLI tool that shows you exactly which process is h
 **Homebrew (macOS & Linux) — RECOMMENDED**
 
 ```bash
-brew install erik-balfe/portpeek/portpeek
+# Add the tap (one-time)
+brew tap erik-balfe/portpeek https://github.com/erik-balfe/portpeek
+
+# Install portpeek
+brew install portpeek
 ```
 
 <details>
